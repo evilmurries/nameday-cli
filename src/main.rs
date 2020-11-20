@@ -1,10 +1,12 @@
-
 use std::collections::HashMap;
-use std::error::Error;
 
-fn parse_args() -> Result<Vec<String> , Box<dyn Error>> {
+fn parse_args() -> Option<Vec<String>> {
     let args: Vec<String> = std::env::args().collect();
-    Ok(args)
+
+    if args.len() != 2 {
+        return None;
+    }
+    Some(args)
 }
 
 fn compile_country_codes() -> HashMap<String, String> {
@@ -34,8 +36,8 @@ fn compile_country_codes() -> HashMap<String, String> {
 
 fn main() {
     match parse_args() {
-        Ok(args) => println!("{:?}", args),
-        Err(error)=> panic!("Something broke: {}", error),
+        Some(args) => args,
+        None => panic!("Supply the country code or name as argument."),
     };
     let countries = compile_country_codes();
     println!("{}", countries.get("pl").unwrap())

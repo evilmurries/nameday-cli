@@ -1,9 +1,16 @@
+extern crate tokio;
+extern crate reqwest;
+
 use std::collections::HashMap;
+
+
+
+const API: &str = "https://api.abalin.net/";
 
 fn parse_args() -> Option<Vec<String>> {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len() != 2 {
+    if args.len() != 3 {
         return None;
     }
     Some(args)
@@ -45,15 +52,35 @@ fn find_country(arg: &String, country_map: &HashMap<String, String>) -> Option<S
     country_code
 }
 
+fn build_nameday_request(name: &String, country: &String) -> String {
+    let request: String;
+    request = format!("{}{}{}{}{}", API, "getdate?name=".to_string(), name, 
+        "&country=".to_string(), country);
+    request
+}
+
+#[tokio::main]
+async fn send_request(url: &String) -> Result<reqwest::Response, reqwest::Error> {
+    let resp = reqwest::get(url).await;
+    resp
+}
+
 fn main() {
-    let mut args = match parse_args() {
+    let args = match parse_args() {
         Some(args) => args,
-        None => panic!("Supply the country code or name as argument."),
+        None => panic!("Supply your name and the country code 
+            or name as argument."),
     };
     let countries = compile_country_codes();
-    let country_code = match find_country(&args[1].to_lowercase(), &countries) {
+    let name = &args[1].to_lowercase();
+    let country_code = match find_country(&args[2].to_lowercase(), &countries) {
         Some(code) => code,
         None => panic!("Incorrect country code provided"),
     };
-    println!("{}", country_code);
+    let request = build_nameday_request(&name, &country_code);
+    let resp = match send_request(&request) {
+        Ok(resp) => resp,
+        Err(e) => panic!("Failure making api request"),
+    };
+    println!("{:?}", resp);
 }

@@ -1,8 +1,6 @@
-extern crate hyper;
+extern crate reqwest;
 
 use std::collections::HashMap;
-use hyper_tls::HttpsConnector;
-use hyper::body::HttpBody as _;
 use tokio::io::{stdout, AsyncWriteExt as _};
 
 
@@ -62,16 +60,10 @@ fn build_nameday_request(name: &String, country: &String) -> String {
 
 #[tokio::main]
 async fn send_request(url: String) -> Result<(), Box<dyn std::error::Error>> {
-    let https = HttpsConnector::new();
-    let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-    let uri = url.parse()?;
-
-    let mut resp = client.get(uri).await?;
-    println!("{:?}", resp);
-
-    while let Some(chunk) = resp.body_mut().data().await {
-        stdout().write_all(&chunk?).await?;
-    }
+    let resp = reqwest::get(&url)
+        .await?;
+    let body = resp.text().await;
+    println!("{:#?}", body);
     Ok(())
 }
 
@@ -88,9 +80,8 @@ fn main() {
         None => panic!("Incorrect country code provided"),
     };
     let request = build_nameday_request(&name, &country_code);
-    match send_request(request) {
-        Ok(_) => println!("It worked"),
-        Err(e) => println!("It didn't work: {}", e),
-    };
-
+     match send_request(request) {
+         Ok(_) => println!("It worked"),
+         Err(e) => println!("It didn't work: {}", e),
+     };
 }
